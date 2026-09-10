@@ -1,55 +1,70 @@
+import { NativeModules, Platform } from 'react-native';
+const { WebRTCModule } = NativeModules;
+
+if (WebRTCModule === null) {
+    throw new Error(`WebRTC native module not found.\n${Platform.OS === 'ios' ?
+        'Try executing the "pod install" command inside your projects ios folder.' :
+        'Try executing the "npm install" command inside your projects folder.'
+    }`);
+}
+
+import { setupNativeEvents } from './EventEmitter';
+import Logger from './Logger';
+import mediaDevices from './MediaDevices';
+import MediaStream from './MediaStream';
+import MediaStreamTrack, { type MediaTrackSettings } from './MediaStreamTrack';
+import MediaStreamTrackEvent from './MediaStreamTrackEvent';
+import permissions from './Permissions';
+import RTCAudioSession from './RTCAudioSession';
+import RTCCertificate from './RTCCertificate';
+import RTCErrorEvent from './RTCErrorEvent';
 import RTCIceCandidate from './RTCIceCandidate';
+import RTCPIPView, { startIOSPIP, stopIOSPIP } from './RTCPIPView';
 import RTCPeerConnection from './RTCPeerConnection';
+import RTCRtpEncodingParameters, { type RTCRtpEncodingParametersInit } from './RTCRtpEncodingParameters';
 import RTCRtpReceiver from './RTCRtpReceiver';
+import RTCRtpSendParameters, { type RTCRtpSendParametersInit } from './RTCRtpSendParameters';
 import RTCRtpSender from './RTCRtpSender';
 import RTCRtpTransceiver from './RTCRtpTransceiver';
-import RTCRtpCapabilities from './RTCRtpCapabilities';
-import RTCRtpCodecCapability from './RTCRtpCodecCapability';
-import RTCRtpEncodingParameters from './RTCRtpEncodingParameters';
-import RTCRtpCodecParameters from './RTCRtpCodecParameters';
-import RTCRtpParameters from './RTCRtpParameters';
-import RTCRtcpParameters from './RTCRtcpParameters';
-import RTCRtpHeaderExtension from './RTCRtpHeaderExtension';
-import RTCRtpSendParameters from './RTCRtpSendParameters';
-import RTCRtpReceiveParameters from './RTCRtpReceiveParameters';
 import RTCSessionDescription from './RTCSessionDescription';
-import RTCErrorEvent from './RTCErrorEvent';
-import RTCView from './RTCView';
+import RTCView, { type RTCVideoViewProps, type RTCIOSPIPOptions } from './RTCView';
 import ScreenCapturePickerView from './ScreenCapturePickerView';
-import MediaStream from './MediaStream';
-import MediaStreamTrack from './MediaStreamTrack';
-import mediaDevices from './MediaDevices';
-import permissions from './Permissions';
-import Logger from './Logger';
 
-Logger.enable('*');
-//Logger.enable(`*,-${Logger.ROOT_PREFIX}:*:DEBUG`);
+Logger.enable(`${Logger.ROOT_PREFIX}:*`);
+
+// Add listeners for the native events early, since they are added asynchronously.
+setupNativeEvents();
 
 export {
     RTCIceCandidate,
     RTCPeerConnection,
     RTCSessionDescription,
+    RTCCertificate,
     RTCView,
+    RTCPIPView,
     ScreenCapturePickerView,
+    RTCRtpEncodingParameters,
     RTCRtpTransceiver,
     RTCRtpReceiver,
     RTCRtpSender,
-    RTCErrorEvent,
-    RTCRtpCapabilities,
-    RTCRtpCodecCapability,
-    RTCRtpCodecParameters,
-    RTCRtpEncodingParameters,
-    RTCRtpParameters,
     RTCRtpSendParameters,
-    RTCRtpReceiveParameters,
-    RTCRtcpParameters,
-    RTCRtpHeaderExtension,
+    RTCErrorEvent,
+    RTCAudioSession,
     MediaStream,
     MediaStreamTrack,
+    type MediaTrackSettings,
+    type RTCRtpEncodingParametersInit,
+    type RTCRtpSendParametersInit,
+    type RTCVideoViewProps,
+    type RTCIOSPIPOptions,
     mediaDevices,
     permissions,
-    registerGlobals
+    registerGlobals,
+    startIOSPIP,
+    stopIOSPIP,
 };
+
+declare const global: any;
 
 function registerGlobals(): void {
     // Should not happen. React Native has a global navigator object.
@@ -66,23 +81,14 @@ function registerGlobals(): void {
     global.navigator.mediaDevices.enumerateDevices = mediaDevices.enumerateDevices.bind(mediaDevices);
 
     global.RTCIceCandidate = RTCIceCandidate;
+    global.RTCCertificate = RTCCertificate;
     global.RTCPeerConnection = RTCPeerConnection;
-    global.RTCRtpReceiver = RTCRtpReceiver;
-    global.RTCRtpSender = RTCRtpReceiver;
     global.RTCSessionDescription = RTCSessionDescription;
     global.MediaStream = MediaStream;
     global.MediaStreamTrack = MediaStreamTrack;
+    global.MediaStreamTrackEvent = MediaStreamTrackEvent;
     global.RTCRtpTransceiver = RTCRtpTransceiver;
     global.RTCRtpReceiver = RTCRtpReceiver;
     global.RTCRtpSender = RTCRtpSender;
     global.RTCErrorEvent = RTCErrorEvent;
-    global.RTCRtpCapabilities = RTCRtpCapabilities;
-    global.RTCRtpCodecCapability = RTCRtpCodecCapability;
-    global.RTCRtpCodecParameters = RTCRtpCodecParameters;
-    global.RTCRtpEncodingParameters = RTCRtpEncodingParameters;
-    global.RTCRtpParameters = RTCRtpParameters;
-    global.RTCRtpSendParameters = RTCRtpSendParameters;
-    global.RTCRtpReceiverParameters = RTCRtpReceiveParameters;
-    global.RTCRtcpParameters = RTCRtcpParameters;
-    global.RTCRtpHeaderExtension = RTCRtpHeaderExtension;
 }

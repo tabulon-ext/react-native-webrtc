@@ -1,15 +1,24 @@
-
 import { NativeModules } from 'react-native';
-import { defineCustomEventTarget } from 'event-target-shim';
 
-import getDisplayMedia from './getDisplayMedia';
-import getUserMedia from './getUserMedia';
+import getDisplayMedia, { Constraints as DisplayMediaConstraints } from './getDisplayMedia';
+import getUserMedia, { Constraints as UserMediaConstraints } from './getUserMedia';
+import { Event, EventTarget, getEventAttributeValue, setEventAttributeValue } from './vendor/event-target-shim';
 
 const { WebRTCModule } = NativeModules;
 
-const MEDIA_DEVICES_EVENTS = ['devicechange'];
+type MediaDevicesEventMap = {
+    devicechange: Event<'devicechange'>
+}
 
-class MediaDevices extends defineCustomEventTarget(...MEDIA_DEVICES_EVENTS) {
+class MediaDevices extends EventTarget<MediaDevicesEventMap> {
+    get ondevicechange() {
+        return getEventAttributeValue(this, 'devicechange');
+    }
+
+    set ondevicechange(value) {
+        setEventAttributeValue(this, 'devicechange', value);
+    }
+
     /**
      * W3C "Media Capture and Streams" compatible {@code enumerateDevices}
      * implementation.
@@ -22,10 +31,11 @@ class MediaDevices extends defineCustomEventTarget(...MEDIA_DEVICES_EVENTS) {
      * W3C "Screen Capture" compatible {@code getDisplayMedia} implementation.
      * See: https://w3c.github.io/mediacapture-screen-share/
      *
+     * @param {*} constraints
      * @returns {Promise}
      */
-    getDisplayMedia() {
-        return getDisplayMedia();
+    getDisplayMedia(constraints: DisplayMediaConstraints) {
+        return getDisplayMedia(constraints);
     }
 
     /**
@@ -36,7 +46,7 @@ class MediaDevices extends defineCustomEventTarget(...MEDIA_DEVICES_EVENTS) {
      * @param {*} constraints
      * @returns {Promise}
      */
-    getUserMedia(constraints) {
+    getUserMedia(constraints: UserMediaConstraints) {
         return getUserMedia(constraints);
     }
 }

@@ -29,9 +29,9 @@ class Permissions {
      * This implementation only supports requesting these permissions, a subset
      * of: https://www.w3.org/TR/permissions/#permission-registry
      */
-    VALID_PERMISSIONS = ['camera', 'microphone'];
+    VALID_PERMISSIONS = [ 'camera', 'microphone' ];
 
-    _lastReq: Promise<any> = Promise.resolve();
+    _lastReq: Promise<unknown> = Promise.resolve();
 
     /**
      * Helper for requesting Android permissions. On Android only one permission
@@ -44,7 +44,7 @@ class Permissions {
      * https://facebook.github.io/react-native/docs/permissionsandroid#permissions-that-require-prompting-the-user
      */
     _requestPermissionAndroid(perm: Permission) {
-        return new Promise((resolve, reject) => {
+        return new Promise(resolve => {
             PermissionsAndroid.request(perm).then(
                 granted => resolve(granted === PermissionsAndroid.RESULTS.GRANTED),
                 () => resolve(false)
@@ -55,16 +55,18 @@ class Permissions {
     /**
      * Validates the given permission descriptor.
      */
-    _validatePermissionDescriptior(permissionDesc) {
+    _validatePermissionDescriptor(permissionDesc) {
         if (typeof permissionDesc !== 'object') {
             throw new TypeError('Argument 1 of Permissions.query is not an object.');
         }
+
         if (typeof permissionDesc.name === 'undefined') {
-            throw new TypeError("Missing required 'name' member of PermissionDescriptor.");
+            throw new TypeError('Missing required \'name\' member of PermissionDescriptor.');
         }
+
         if (this.VALID_PERMISSIONS.indexOf(permissionDesc.name) === -1) {
             throw new TypeError(
-                "'name' member of PermissionDescriptor is not a valid value for enumeration PermissionName."
+                '\'name\' member of PermissionDescriptor is not a valid value for enumeration PermissionName.'
             );
         }
     }
@@ -75,15 +77,17 @@ class Permissions {
      */
     query(permissionDesc: PermissionDescriptor) {
         try {
-            this._validatePermissionDescriptior(permissionDesc);
+            this._validatePermissionDescriptor(permissionDesc);
         } catch (e) {
             return Promise.reject(e);
         }
+
         if (Platform.OS === 'android') {
             const perm =
                 permissionDesc.name === 'camera'
                     ? PermissionsAndroid.PERMISSIONS.CAMERA
                     : PermissionsAndroid.PERMISSIONS.RECORD_AUDIO;
+
             return new Promise(resolve => {
                 PermissionsAndroid.check(perm).then(
                     granted => resolve(granted ? this.RESULT.GRANTED : this.RESULT.PROMPT),
@@ -103,17 +107,20 @@ class Permissions {
      */
     request(permissionDesc: PermissionDescriptor) {
         try {
-            this._validatePermissionDescriptior(permissionDesc);
+            this._validatePermissionDescriptor(permissionDesc);
         } catch (e) {
             return Promise.reject(e);
         }
+
         if (Platform.OS === 'android') {
             const perm =
                 permissionDesc.name === 'camera'
                     ? PermissionsAndroid.PERMISSIONS.CAMERA
                     : PermissionsAndroid.PERMISSIONS.RECORD_AUDIO;
             const requestPermission = () => this._requestPermissionAndroid(perm);
+
             this._lastReq = this._lastReq.then(requestPermission, requestPermission);
+
             return this._lastReq;
         } else if (Platform.OS === 'ios' || Platform.OS === 'macos') {
             return WebRTCModule.requestPermission(permissionDesc.name);

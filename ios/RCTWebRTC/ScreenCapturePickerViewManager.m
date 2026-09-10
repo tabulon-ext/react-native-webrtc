@@ -1,18 +1,11 @@
-//
-//  ScreenCapturePickerViewManager.m
-//  react-native-webrtc
-//
-//  Created by Alex-Dan Bumbu on 20/01/2021.
-//
+#if TARGET_OS_IOS
 
-#if !TARGET_OS_OSX
-
+#import <React/RCTLog.h>
 #import <ReplayKit/ReplayKit.h>
-#import <React/RCTUIManager.h>
 
 #import "ScreenCapturePickerViewManager.h"
 
-NSString* const kRTCScreenSharingExtension = @"RTCScreenSharingExtension";
+NSString *const kRTCScreenSharingExtension = @"RTCScreenSharingExtension";
 
 @implementation ScreenCapturePickerViewManager {
     RPSystemBroadcastPickerView *_broadcastPickerView;
@@ -25,7 +18,7 @@ RCT_EXPORT_MODULE()
     _broadcastPickerView.preferredExtension = self.preferredExtension;
     _broadcastPickerView.showsMicrophoneButton = false;
     _broadcastPickerView.userInteractionEnabled = false;
-    
+
     return _broadcastPickerView;
 }
 
@@ -36,33 +29,31 @@ RCT_EXPORT_MODULE()
     return infoDictionary[kRTCScreenSharingExtension];
 }
 
-RCT_EXPORT_METHOD(show:(nonnull NSNumber *)reactTag) {
-    [self.bridge.uiManager addUIBlock:^(
-                __unused RCTUIManager *uiManager,
-                NSDictionary<NSNumber *, UIView *> *viewRegistry) {
-        id view = viewRegistry[reactTag];
-        if (![view isKindOfClass:[RPSystemBroadcastPickerView class]]) {
-            RCTLogError(@"Invalid view returned from registry, expecting \
-                        RPSystemBroadcastPickerView, got: %@", view);
-        } else {
-            // Simulate a click
-            UIButton *btn = nil;
+RCT_EXPORT_METHOD(show : (nonnull NSNumber *)reactTag) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        RPSystemBroadcastPickerView *picker = self->_broadcastPickerView;
+        if (![picker isKindOfClass:[RPSystemBroadcastPickerView class]]) {
+            RCTLogError(@"Invalid broadcast picker view, expecting "
+                        @"RPSystemBroadcastPickerView, got: %@",
+                        picker);
+            return;
+        }
 
-            for (UIView *subview in ((RPSystemBroadcastPickerView *)view).subviews) {
-                if ([subview isKindOfClass:[UIButton class]]) {
-                    btn = (UIButton *)subview;
-                }
-            }
-            if (btn != nil) {
-                [btn sendActionsForControlEvents:UIControlEventTouchUpInside];
-            }
-            else {
-                RCTLogError(@"RPSystemBroadcastPickerView button not found");
+        UIButton *btn = nil;
+
+        for (UIView *subview in picker.subviews) {
+            if ([subview isKindOfClass:[UIButton class]]) {
+                btn = (UIButton *)subview;
             }
         }
-    }];
+        if (btn != nil) {
+            [btn sendActionsForControlEvents:UIControlEventTouchUpInside];
+        } else {
+            RCTLogError(@"RPSystemBroadcastPickerView button not found");
+        }
+    });
 }
 
 @end
 
-#endif // !TARGET_OS_OSX
+#endif

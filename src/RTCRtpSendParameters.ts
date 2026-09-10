@@ -1,7 +1,8 @@
-import RTCRtpParameters, { RTCRtpParametersInit } from "./RTCRtpParameters";
-import RTCRtpEncodingParameters from "./RTCRtpEncodingParameters";
+import RTCRtpEncodingParameters, { RTCRtpEncodingParametersInit } from './RTCRtpEncodingParameters';
+import RTCRtpParameters, { RTCRtpParametersInit } from './RTCRtpParameters';
+import { deepClone } from './RTCUtil';
 
-type DegradationPreferenceType = 'maintain-framerate' 
+type DegradationPreferenceType = 'maintain-framerate'
     | 'maintain-resolution'
     | 'balanced'
     | 'disabled'
@@ -14,38 +15,49 @@ type DegradationPreferenceType = 'maintain-framerate'
 class DegradationPreference {
     static fromNative(nativeFormat: string): DegradationPreferenceType {
         const stringFormat = nativeFormat.toLowerCase().replace('_', '-');
+
         return stringFormat as DegradationPreferenceType;
     }
 
     static toNative(format: DegradationPreferenceType): string {
         return format.toUpperCase().replace('-', '_');
     }
-} 
+}
+
+export interface RTCRtpSendParametersInit extends RTCRtpParametersInit {
+    transactionId: string;
+    encodings: RTCRtpEncodingParametersInit[];
+    degradationPreference?: string;
+}
 
 export default class RTCRtpSendParameters extends RTCRtpParameters {
-
     readonly transactionId: string;
-    readonly encodings: RTCRtpEncodingParameters[];
+    encodings: (RTCRtpEncodingParameters | RTCRtpEncodingParametersInit)[];
     degradationPreference: DegradationPreferenceType | null;
-    constructor(init: RTCRtpParametersInit & {
-        transactionId: string,
-        encodings: RTCRtpEncodingParameters[],
-        degradationPreference?: string
-    }) {
+
+    constructor(init: RTCRtpSendParametersInit) {
         super(init);
+
         this.transactionId = init.transactionId;
-        this.encodings = init.encodings;
+        this.encodings = [];
         this.degradationPreference = init.degradationPreference ?
             DegradationPreference.fromNative(init.degradationPreference) : null;
+
+        for (const enc of init.encodings) {
+            this.encodings.push(new RTCRtpEncodingParameters(enc));
+        }
     }
 
     toJSON() {
-        let obj = {
-            encodings: this.encodings,
-        };
+        const obj = super.toJSON();
+
+        obj['transactionId'] = this.transactionId;
+        obj['encodings'] = this.encodings.map(e => deepClone(e));
+
         if (this.degradationPreference !== null) {
             obj['degradationPreference'] = DegradationPreference.toNative(this.degradationPreference);
         }
-        return obj
+
+        return obj;
     }
 }
